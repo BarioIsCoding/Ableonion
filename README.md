@@ -17,7 +17,7 @@ And yes, the original site *does* log all of your messages, even in the One-to-O
 ## Installation
 ### 1. Clone this repository:
 ```sh
-git clone https://github.com/yourrepo/ableonion-clone.git
+git clone https://github.com/BarioIsCoding/ableonion.git
 cd ableonion-clone
 ```
 
@@ -36,7 +36,7 @@ python app.py
 
 ## Project Structure
 ```
-/ableonion-clone
+/ableonion
 │── templates/           # HTML templates
 │   ├── home.html        # Homepage
 │   ├── contact.html     # Contact form
