@@ -2,6 +2,9 @@
 Ableonion without the logging and captcha.
 The Links page has also been adjusted for legal reasons.
 
+Logging has been fully removed.
+And yes, the original site *does* log all of your messages, even in the One-to-One chat, that's no secret.
+
 ![Ableonion](https://i.ibb.co/8DZDBDYx/Ableonion.png)
 
 ## Features
