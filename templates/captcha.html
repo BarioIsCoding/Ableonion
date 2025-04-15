@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta charset="utf-8"><title>Random Chat</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="data:,"><style>
+html {background:#eee; font-family:sans-serif; text-align:center}
+header a:first-child {position:absolute;top:.2em;left:.2em;color:#333;font-size:75%}header a:last-child {position:absolute;top:.2em;right:.2em;color:#333;font-size:75%}
+.expires::before {
+	animation: expb 60s step-end forwards;
+	content: "Captcha expires in ";
+}
+@keyframes expb {
+	to {content: "Captcha expired."; color: red}
+}
+.expires::after {
+	animation: expa 60s step-end forwards;
+	content: " seconds.";
+}
+@keyframes expa {
+	to {content: ""}
+}
+.counter {
+	font-family: monospace;
+	font-size: 1em;
+	line-height: 1;
+	position: relative;
+	overflow: hidden;
+	height: 1em;
+	width: 1.2em;
+	display: inline-block;
+	animation: col 60s linear forwards;
+}
+@keyframes col {
+	0% {color: green}
+	99% {color: red; opacity: 1; max-width: 100%}
+	100% {opacity: 0; max-width: 0}
+}
+.counter::before, .counter::after {
+	position: absolute;
+	white-space: pre;
+	width: .6em;
+}
+.counter::before {
+	animation: tens 60s linear forwards;
+	content: "5 \a 4 \a 3 \a 2 \a 1 \a 0";
+	left: 0;
+}
+@keyframes tens {
+	0% {transform: translateY(0)}
+	16.667% {transform: translateY(0)}
+	17% {transform: translateY(-1em)}
+	33.333% {transform: translateY(-1em)}
+	33.667% {transform: translateY(-2em)}
+	50% {transform: translateY(-2em)}
+	50.333% {transform: translateY(-3em)}
+	66.667% {transform: translateY(-3em)}
+	67% {transform: translateY(-4em)}
+	83.333% {transform: translateY(-4em)}
+	83.666% {transform: translateY(-5em)}
+	100% {transform: translateY(-5em)}
+}
+.counter::after {
+	animation: ones 10s ease-in-out 6 forwards;
+	content: "9 \a 8 \a 7 \a 6 \a 5 \a 4 \a 3 \a 2 \a 1 \a 0";
+	right: 0;
+}
+@keyframes ones {
+	0% {transform: translateY(0)}
+	11% {transform: translateY(-1em)}
+	22% {transform: translateY(-2em)}
+	33% {transform: translateY(-3em)}
+	44% {transform: translateY(-4em)}
+	55% {transform: translateY(-5em)}
+	66% {transform: translateY(-6em)}
+	77% {transform: translateY(-7em)}
+	88% {transform: translateY(-8em)}
+	100% {transform: translateY(-9em)}
+}
+input,button {font-size:inherit; margin:1em auto 0 auto}
+button {background:#ede; padding:.5em 1em}
+button:hover {background:#dee; cursor:pointer}
+</style></head><body><header><a href="/links/">Links</a><a href="/contact/">About Us</a></header><h1>Random Chat</h1>
+<form>
+	<div class="expires"><div class="counter"></div></div>
+	<br>Set hours and minutes. <a target="_blank" href="/captcha-help.html">Help</a>
+	<div><input type="time" value="00:00" name="t" autofocus=""></div>
+	<input value="Xlr114wghBiU0Lo-4MpRgyXg5rXvaJkJ5hHDc616bk8" name="x" type="hidden">
+	<button>Join</button>
+</form></body></html>

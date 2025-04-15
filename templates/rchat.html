@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Random Chat</title>
+    <link rel="icon" href="data:,">
+    <base target="_blank">
+    <style>
+        html {
+            background: linear-gradient(301deg, rgba(233,41,185,0.709), rgba(115,16,200,0.585), rgba(38,120,177,0.976), rgba(27,156,146,0.708), rgba(68,96,134,0.201), rgba(88,15,68,0.409), rgba(238,253,39,0.832));
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+        body {
+            width: calc(100% - 10mm);
+            height: calc(100% - 10mm);
+            margin: 5mm;
+            position: relative;
+        }
+        h1 {
+            position: absolute;
+            margin: 0;
+            z-index: -1;
+            color: #fff;
+            font-family: fantasy;
+            text-shadow: -2px 2px 4px #000;
+        }
+        h1 + h1 {
+            right: 0;
+            text-shadow: 2px 2px 4px #000;
+        }
+        nav {
+            display: table;
+            margin: auto;
+        }
+        nav a {
+            display: table-cell;
+            vertical-align: middle;
+            text-decoration: none;
+            background: #e55;
+            color: #fff;
+            height: 10mm;
+            border: 1px outset #d44;
+            padding: 0 4mm;
+            text-shadow: 0 0 6px #000;
+            box-shadow: 0 2px 8px #000;
+        }
+        nav a:hover {
+            background: #d33;
+        }
+        main {
+            position: absolute;
+            top: 15mm;
+            width: 100%;
+            height: calc(100% - 15mm);
+            background: rgba(255,255,255,.5);
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        div {
+            width: 100%;
+            max-height: calc(100% - 10mm);
+            overflow: auto;
+        }
+        section {
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        p {
+            margin: 0;
+            padding: 5px 10px;
+        }
+        p:nth-child(2n) {
+            background: rgba(207,207,207,.5);
+        }
+        u {
+            text-decoration: none;
+            font-size: 75%;
+        }
+        s {
+            text-decoration: none;
+            font-weight: bold;
+            color: #e66;
+        }
+        b {
+            color: #26a;
+        }
+        iframe {
+            display: block;
+            width: 100%;
+            height: 10mm;
+            border: 1px solid #666;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>Random</h1>
+    <h1>Chat</h1>
+    <nav>
+        <a href="/rchat" target="_self">Find a new random</a>
+        <a href="help">Help</a>
+    </nav>
+    <main>
+        <iframe srcdoc='<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <meta name="referrer" content="no-referrer">
+            <title>t</title>
+            <link rel="icon" href="data:,">
+            <style>
+                html { overflow: hidden; margin: 0; font-family: sans-serif; }
+                body { margin: 0; }
+                form { display: flex; }
+                input { outline: none; border: 0; }
+                input[name=m] { flex: 1; font-size: 8mm; height: 10mm; }
+                input:hover, input:focus { background: #ded; }
+                input[type=submit] { font-size: 9mm; height: 11mm; border: 0; padding: 0; margin-top: -3px; background: #782; text-shadow: 2px 2px 4px #000; cursor: pointer; }
+                input[type=submit]:hover { background: #9a4; }
+            </style>
+        </head>
+        <body>
+            <form action=".">
+                <input name="m" autofocus autocomplete="off" tabindex="1">
+                <input type="submit" value="💬">
+                <input type="hidden" name="h" value="tGh5mAy5ET4D5b3ugOASvg">
+            </form>
+        </body>
+        </html>'>
+        </iframe>
+        <div>
+            <script>
+                d = document.querySelector("div");
+                document.querySelector("iframe").onload = function() {
+                    d.scrollTo(0, d.scrollHeight);
+                    this.contentDocument.querySelector("input").focus();
+                }
+            </script>
+            <section>
+                <p><i>Searching for a random… 279 chatters in the last hour.</i></p>
+                <p><i>A random was found, say hi!</i></p>
+                <p><u>18:40 - </u><b>Random:</b> Hi</p>
+                <p><u>18:41 - </u><s>You:</s> Hi</p>
+                <p><u>18:41 - </u><b>Random:</b> How are you?</p>
+                <p><u>18:41 - </u><s>You:</s> I'm fine, what about you?</p>
+                <p><u>18:41 - </u><b>Random:</b> Me too, thanks</p>
+                <p><u>18:42 - </u><b>Random:</b> What are you doing?</p>
+                <p><u>18:42 - </u><s>You:</s> What are you doing right now?</p>
+                <p><u>18:42 - </u><s>You:</s> Haha, said the same thing</p>
+                <p><u>18:42 - </u><s>You:</s> I'm trying to copy this website 1:1 using a Python Flask framework.</p>
+                <p><u>18:42 - </u><b>Random:</b> How would that work?</p>
+                <p><u>18:43 - </u><s>You:</s> Manually recoding everything</p>
+                <p><u>18:43 - </u><b>Random:</b> Okay?</p>
+                <p><u>18:43 - </u><s>You:</s> I'm just here so I can copy the rchat as well, got lucky I got a good chat</p>
+            </section>
+        </div>
+    </main>
+</body>
+</html>
