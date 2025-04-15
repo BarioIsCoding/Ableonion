@@ -53,7 +53,8 @@ python app.py
 This project is for **educational purposes only**. Use at your own risk.
 
 ## Who made Ableonion?
--# The text below does not act as official text, but rather based off of personal theory.
+*The text below does not act as official text, but rather based off of personal theory.*
+
 Well, either it's the law enforcement, the FBI, or a super paranoid owner.
 The website is, according to user feedback, up since 2013, which is very unusual for a Tor website. Additionally, the website supports hundreds to thousand simultaneous users, and has little downtimes, which indicates server strength. The website refers to themselves as a non-profit organisation for free speech, and labels the chat as self-moderating and has a few rules intact:
 > We are a non-profit organization supporting freedom of speech without limits. However, any kind of spam, scam or commercial posts will not be tolerated.
@@ -64,8 +65,8 @@ Ableonion does have mild moderations directed to spam:
 2. Chat lockdown - Additionally, when a lot of different users spam the same thing, a notification comes up for everyone who sends a message to `All`, but not on private messages:
 > [12:34] chat:
 > Message sending failed. We are currently under attack.
--# Time deals as placeholder and is made up. The message shows up as red and only to the user who has sent them even though it is displayed as a normal message rather than a private message.
-This happens automatically, and one tim it has happened was on February 3rd, 2025, 12:56 (Ableonion time), when the chat was down for several minutes.
+* Time deals as placeholder and is made up. The message shows up as red and only to the user who has sent them even though it is displayed as a normal message rather than a private message.*
+This happens automatically, and one time it has happened was on February 3rd, 2025, 12:56 (Ableonion time), when the chat was down for several minutes.
 ### **Scam**
 There have been cases of scam on Ableonion, such as:
 1. The cola spam - begging for donations; including accessing an "Ableonion VIP chat" when donating Bitcoin and giving out the Ableonion username.
