@@ -68,7 +68,7 @@ Well, either it's the law enforcement, the FBI, or a super paranoid owner.
 The website is, according to user feedback, up since 2013, which is very unusual for a Tor website. Additionally, the website supports hundreds to thousand simultaneous users, and has little downtimes, which indicates server strength. The website refers to themselves as a non-profit organisation for free speech, and labels the chat as self-moderating and has a few rules intact:
 > We are a non-profit organization supporting freedom of speech without limits. However, any kind of spam, scam or commercial posts will not be tolerated.
 
-If they don't significantly filter or ban these messages (although they kind of do), then that means... they log them. So, let's look what Ableonion does for the three roles.
+If they don't significantly filter or ban these messages (although they kind of do), then that means... they log them. So, let's look what Ableonion does for the three rules.
 ### **Spam**
 Ableonion does have mild moderations directed to spam:
 1. Ghost messages - when sending the same message several times consecutively, only the 1st message is public; the following messages are hidden from the chat and the rest are not deleted, but **only displayed to the user who has sent them**, which can make the user *think* the message went through, while it has been blocked. 
