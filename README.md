@@ -52,6 +52,15 @@ python app.py
 ## License
 This project is for **educational purposes only**. Use at your own risk.
 
+## Is Ableonion down forever?
+It is unknown whether Ableonion is down forever. It has been down for approximately 2 weeks as of April 21st, 2025. 
+```
+Onion site not found
+
+The most likely cause is that the onion site is offline. Contact the onion site administrator.
+```
+This error indicates Ableonion is temporarily down, not down forever.
+
 ## Who made Ableonion?
 *The text below does not act as official text, but rather based off of personal theory.*
 
@@ -79,5 +88,4 @@ Other than that, there is no sufficient evidence of Ableonion acting against bro
 ### **Commercial posts**
 Commercial posts are **very frequent on Ableonion**, and the most relevant one is the [KageNoHitobito](https://www.fortinet.com/blog/threat-research/ransomware-roundup-keganohitobito-and-donex) ransomware, which has been found to have occured in several countries. The randomware required showing up to the public Ableonion chat and sending a private message to a user "Hitobito", which appears to be a group, not an individual.
 There are a lot of different commercial posts on Ableonion, yet, **there is no evidence that Ableonion does something against commercial posts**.
-
 The website has a clean GUI with very little updates and the CSS is always inline CSS, and minimal JS is used, particularly for reversing the message order and GUI in the public chat, whereas JS is not required to use. In fact, the description of the website is "Realtime chat. Accessible without JavaScript.". The website has not a single spelling error and very little bugs, but is still updated; just rare. The last significant update was on 2024-7. No log-in is required, and the website loads forever (works like a Websocket), which deliberately or not prevents the Tor circuit from updating.
