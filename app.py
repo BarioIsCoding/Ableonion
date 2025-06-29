@@ -7,6 +7,8 @@ import string
 import threading
 import collections
 import queue
+import secrets
+import json
 
 app = Flask(__name__)
 MAX_MESSAGE_LENGTH = 999  # Limit message length to 999 characters
@@ -18,11 +20,16 @@ chat_messages = {}  # {client_id: [{time, sender, message}]}
 recent_ips = collections.deque(maxlen=1000)  # Store recent IPs with timestamps
 chat_locks = {}  # Locks for thread safety when modifying chat data
 active_connections = {}  # Track active streaming connections
+client_tokens = {}  # {client_id: submission_token} for security
 
 # Helper functions for chat functionality
 def generate_client_id():
-    """Generate a random client ID."""
-    return ''.join(random.choices(string.ascii_letters + string.digits + '_-', k=22))
+    """Generate a secure random client ID."""
+    return secrets.token_urlsafe(32)  # More secure and longer
+
+def generate_submission_token():
+    """Generate a secure submission token."""
+    return secrets.token_urlsafe(16)
 
 def generate_random_gradient_css():
     """Generate a random CSS gradient similar to the examples."""
@@ -51,6 +58,31 @@ def count_unique_chatters():
             unique_ips.add(ip)
     return len(unique_ips)
 
+def clear_client_session(client_id):
+    """Clear all data associated with a client."""
+    # Remove from active chats
+    if client_id in active_chats:
+        partner_id = active_chats[client_id].get('partner_id')
+        if partner_id and partner_id in active_chats:
+            active_chats[partner_id].pop('partner_id', None)
+            add_system_message(partner_id, "The random left.")
+        active_chats.pop(client_id, None)
+    
+    # Remove from pending users
+    pending_users.pop(client_id, None)
+    
+    # Clear messages
+    chat_messages.pop(client_id, None)
+    
+    # Clear tokens
+    client_tokens.pop(client_id, None)
+    
+    # Clear locks
+    chat_locks.pop(client_id, None)
+    
+    # Clear connections
+    active_connections.pop(client_id, None)
+
 def find_chat_partner(client_id):
     """Find a chat partner for the client."""
     now = time.time()
@@ -72,6 +104,28 @@ def find_chat_partner(client_id):
                 chat_messages[client_id] = []
             if partner_id not in chat_messages:
                 chat_messages[partner_id] = []
+            
+            # Add system message for both users
+            add_system_message(client_id, "A random was found, say hi!")
+            add_system_message(partner_id, "A random was found, say hi!")
+            
+            # Notify partner's streaming connection if active
+            if partner_id in active_connections and 'queue' in active_connections[partner_id]:
+                # Queue an update to ADD the "found" message (not replace searching)
+                update_html = '''
+            <script>
+                // Add found message without removing searching message
+                var section = document.querySelector("section");
+                var newMsg = document.createElement("p");
+                newMsg.innerHTML = "<i>A random was found, say hi!</i>";
+                section.appendChild(newMsg);
+                // Scroll to bottom
+                var d = document.querySelector("div");
+                d.scrollTo(0, d.scrollHeight);
+            </script>
+'''
+                active_connections[partner_id]['queue'].put(update_html)
+            
             return True
     
     # No partner found, add to pending
@@ -109,6 +163,23 @@ def add_message(client_id, message, is_from_partner=False):
                     'message': message,
                     'is_system': False
                 })
+                
+                # Push update to partner's streaming connection if active
+                if partner_id in active_connections and 'queue' in active_connections[partner_id]:
+                    # Create HTML for the new message
+                    escaped_message = escape(message)
+                    update_html = f'''
+            <script>
+                var section = document.querySelector("section");
+                var newMsg = document.createElement("p");
+                newMsg.innerHTML = "<u>{time_str} - </u><b>Random:</b> {escaped_message}";
+                section.appendChild(newMsg);
+                // Scroll to bottom
+                var d = document.querySelector("div");
+                d.scrollTo(0, d.scrollHeight);
+            </script>
+'''
+                    active_connections[partner_id]['queue'].put(update_html)
 
 def add_system_message(client_id, message):
     """Add a system message to the chat history."""
@@ -123,7 +194,9 @@ def add_system_message(client_id, message):
 
 def get_searching_message(elapsed_seconds):
     """Get the searching message with appropriate number of dots."""
-    dots = '.' * (1 + (elapsed_seconds // 3) % 3)
+    # Continuously add dots up to a maximum of 10
+    num_dots = min(1 + (elapsed_seconds // 3), 10)
+    dots = '.' * num_dots
     return f"Searching for a random{dots} {count_unique_chatters()} chatters in the last hour."
 
 def check_partner_left(client_id):
@@ -134,23 +207,50 @@ def check_partner_left(client_id):
             # Partner left
             active_chats.pop(client_id, None)
             add_system_message(client_id, "The random left.")
+            
+            # Push update to streaming connection if active
+            if client_id in active_connections and 'queue' in active_connections[client_id]:
+                update_html = '''
+            <script>
+                var section = document.querySelector("section");
+                var newMsg = document.createElement("p");
+                newMsg.innerHTML = "<i>The random left.</i>";
+                section.appendChild(newMsg);
+                // Scroll to bottom
+                var d = document.querySelector("div");
+                d.scrollTo(0, d.scrollHeight);
+            </script>
+'''
+                active_connections[client_id]['queue'].put(update_html)
+            
             return True
     return False
 
-def initialize_chat_session(client_id, message, start_time):
+def initialize_chat_session(client_id, message, start_time, token):
     """Initialize or update chat session state."""
     # Record IP for unique chatter count
     client_ip = request.remote_addr
     recent_ips.append((client_ip, time.time()))
     
-    # Generate or use existing client ID
-    if not client_id or client_id not in active_chats and client_id not in pending_users:
+    # Validate token if client_id exists
+    if client_id and client_id in client_tokens:
+        if client_tokens.get(client_id) != token:
+            # Invalid token, generate new session
+            client_id = generate_client_id()
+            token = generate_submission_token()
+            client_tokens[client_id] = token
+            start_time = get_utc_time()
+    elif not client_id:
+        # No client_id provided, generate new session
         client_id = generate_client_id()
+        token = generate_submission_token()
+        client_tokens[client_id] = token
+        start_time = get_utc_time()
+    
+    # Initialize new session if needed
+    if client_id not in active_chats and client_id not in pending_users:
         # Initialize lock for this client
         chat_locks[client_id] = threading.Lock()
-        
-        # Generate start time for searching animation
-        start_time = get_utc_time()
         
         # Clear any old messages
         if client_id in chat_messages:
@@ -161,8 +261,6 @@ def initialize_chat_session(client_id, message, start_time):
         
         # Start looking for a partner
         has_partner = find_chat_partner(client_id)
-        if has_partner:
-            add_system_message(client_id, "A random was found, say hi!")
     
     # Process message if provided
     if message and len(message) <= MAX_MESSAGE_LENGTH:
@@ -180,17 +278,6 @@ def initialize_chat_session(client_id, message, start_time):
     # Check if we have a partner or still searching
     has_partner = client_id in active_chats and 'partner_id' in active_chats[client_id]
     
-    # If we were searching but now have a partner, add the "found" message
-    if has_partner and client_id in chat_messages:
-        found_message = False
-        for msg in chat_messages[client_id]:
-            if msg.get('is_system') and "random was found" in msg.get('message', ''):
-                found_message = True
-                break
-        
-        if not found_message:
-            add_system_message(client_id, "A random was found, say hi!")
-    
     # Check if partner left
     if has_partner:
         check_partner_left(client_id)
@@ -199,7 +286,7 @@ def initialize_chat_session(client_id, message, start_time):
     # Register connection for updates
     active_connections[client_id] = {'timestamp': time.time(), 'queue': queue.Queue()}
     
-    return client_id, start_time, has_partner
+    return client_id, start_time, has_partner, token
 
 def get_message_html(client_id):
     """Generate HTML for chat messages."""
@@ -237,29 +324,55 @@ def update_search_message(client_id, start_time):
                 return True
     return False
 
-def stream_chat_content(client_id, start_time):
-    """Stream chat content in chunks with deliberate loading delays."""
+def render_input_form(token=None):
+    """Render the simple input form template when x parameter is present."""
+    if not token:
+        token = generate_submission_token()
+    
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="referrer" content="no-referrer">
+    <title>t</title>
+    <link rel="icon" href="data:,">
+    <style>
+        html {{ overflow: hidden; margin: 0; font-family: sans-serif; }}
+        body {{ margin: 0; }}
+        form {{ display: flex; }}
+        input {{ outline: none; border: 0; }}
+        input[name=m] {{ flex: 1; font-size: 8mm; height: 10mm; }}
+        input:hover, input:focus {{ background: #ded; }}
+        input[type=submit] {{ font-size: 9mm; height: 11mm; border: 0; padding: 0; margin-top: -3px; background: #782; text-shadow: 2px 2px 4px #000; cursor: pointer; }}
+        input[type=submit]:hover {{ background: #9a4; }}
+    </style>
+</head>
+<body>
+    <form action="/rchat" method="get">
+        <input name="m" autofocus autocomplete="off" tabindex="1">
+        <input type="submit" value="💬">
+        <input type="hidden" name="x" value="{token}">
+    </form>
+</body>
+</html>'''
+    return html
+
+def stream_chat_content(client_id, start_time, token):
+    """Stream chat content without loading delays."""
     # Get gradient for this session
     gradient = generate_random_gradient_css()
     
-    # Yield initial HTML doctype and head opening - this allows the browser to start parsing
-    yield '<!DOCTYPE html>\n'
-    yield '<html lang="en">\n'
-    yield '<head>\n'
-    time.sleep(0.2)  # Small delay to create visible loading effect
-    
-    # Yield meta tags
-    yield '''    <meta charset="UTF-8">
+    # Generate the entire HTML at once
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
     <title>Random Chat</title>
     <link rel="icon" href="data:,">
     <base target="_blank">
-'''
-    time.sleep(0.3)  # Delay between head elements
-    
-    # Yield CSS styles
-    yield f'''    <style>
+    <style>
         html {{
             background: {gradient};
             width: 100%;
@@ -349,84 +462,35 @@ def stream_chat_content(client_id, start_time):
             box-sizing: border-box;
         }}
     </style>
-'''
-    yield '</head>\n'
-    time.sleep(0.5)  # Longer delay after CSS
-    
-    # Yield body start and header
-    yield '<body>\n'
-    yield '    <h1>Random</h1>\n'
-    yield '    <h1>Chat</h1>\n'
-    time.sleep(0.2)
-    
-    # Yield navigation
-    yield '''    <nav>
+</head>
+<body>
+    <h1>Random</h1>
+    <h1>Chat</h1>
+    <nav>
         <a href="/rchat" target="_self">Find a new random</a>
-        <a href="help">Help</a>
+        <a href="/help">Help</a>
     </nav>
-'''
-    time.sleep(0.3)
-    
-    # Yield main container opening
-    yield '    <main>\n'
-    time.sleep(0.2)
-    
-    # Yield iframe with form
-    yield f'''        <iframe srcdoc='<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="utf-8">
-            <meta name="referrer" content="no-referrer">
-            <title>t</title>
-            <link rel="icon" href="data:,">
-            <style>
-                html {{ overflow: hidden; margin: 0; font-family: sans-serif; }}
-                body {{ margin: 0; }}
-                form {{ display: flex; }}
-                input {{ outline: none; border: 0; }}
-                input[name=m] {{ flex: 1; font-size: 8mm; height: 10mm; }}
-                input:hover, input:focus {{ background: #ded; }}
-                input[type=submit] {{ font-size: 9mm; height: 11mm; border: 0; padding: 0; margin-top: -3px; background: #782; text-shadow: 2px 2px 4px #000; cursor: pointer; }}
-                input[type=submit]:hover {{ background: #9a4; }}
-            </style>
-        </head>
-        <body>
-            <form action=".">
-                <input name="m" autofocus autocomplete="off" tabindex="1">
-                <input type="submit" value="💬">
-                <input type="hidden" name="h" value="{client_id}">
-                <input type="hidden" name="t" value="{start_time}">
-            </form>
-        </body>
-        </html>'>
-        </iframe>
-'''
-    time.sleep(0.5)
-    
-    # Yield div and initial script
-    yield '''        <div>
+    <main>
+        <iframe src="/rchat/input?h={client_id}&t={start_time}&x={token}"></iframe>
+        <div>
             <script>
                 d = document.querySelector("div");
-                document.querySelector("iframe").onload = function() {
+                document.querySelector("iframe").onload = function() {{
                     d.scrollTo(0, d.scrollHeight);
                     this.contentDocument.querySelector("input").focus();
-                }
+                }}
+                
+                // Store gradient for this session
+                window.sessionGradient = '{gradient}';
             </script>
+            <section>
+{get_message_html(client_id)}            </section>
+        </div>
+    </main>
 '''
-    time.sleep(0.3)
     
-    # Yield section with messages
-    yield '            <section>\n'
-    messages_html = get_message_html(client_id)
-    # Yield messages in chunks
-    for i in range(0, len(messages_html), 500):
-        yield messages_html[i:i+500]
-        time.sleep(0.2)
-    
-    yield '            </section>\n'
-    yield '        </div>\n'
-    yield '    </main>\n'
-    time.sleep(0.3)
+    # Yield the entire HTML first
+    yield html
     
     # Now continue with an infinite stream of updates
     update_counter = 0
@@ -477,6 +541,131 @@ def stream_chat_content(client_id, start_time):
         # Slow down the loop to avoid excessive CPU usage
         time.sleep(1)
 
+@app.route('/rchat/input')
+def rchat_input():
+    """Dedicated route for the iframe input form."""
+    # Get parameters
+    client_id = request.args.get('h', '')
+    start_time = request.args.get('t', '')
+    token = request.args.get('x', '')
+    
+    # Validate token
+    if client_id and client_id in client_tokens:
+        if client_tokens[client_id] != token:
+            return "Invalid session", 403
+    
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="referrer" content="no-referrer">
+    <title>t</title>
+    <link rel="icon" href="data:,">
+    <style>
+        html {{ overflow: hidden; margin: 0; font-family: sans-serif; }}
+        body {{ margin: 0; }}
+        form {{ display: flex; }}
+        input {{ outline: none; border: 0; }}
+        input[name=m] {{ flex: 1; font-size: 8mm; height: 10mm; }}
+        input:hover, input:focus {{ background: #ded; }}
+        input[type=submit] {{ font-size: 9mm; height: 11mm; border: 0; padding: 0; margin-top: -3px; background: #782; text-shadow: 2px 2px 4px #000; cursor: pointer; }}
+        input[type=submit]:hover {{ background: #9a4; }}
+    </style>
+</head>
+<body>
+    <form id="chatForm">
+        <input name="m" id="messageInput" autofocus autocomplete="off" tabindex="1">
+        <input type="submit" value="💬">
+    </form>
+    <script>
+        // Handle form submission without page reload
+                        document.getElementById('chatForm').addEventListener('submit', function(e) {{
+            e.preventDefault();
+            
+            var messageInput = document.getElementById('messageInput');
+            var message = messageInput.value.trim();
+            
+            if (message) {{
+                // Clear input immediately
+                messageInput.value = '';
+                
+                // Send message via AJAX
+                fetch('/rchat/send', {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                    }},
+                    body: JSON.stringify({{
+                        h: '{client_id}',
+                        t: '{start_time}',
+                        x: '{token}',
+                        m: message
+                    }})
+                }}).then(response => {{
+                    if (!response.ok) {{
+                        console.error('Failed to send message');
+                    }}
+                }}).catch(error => {{
+                    console.error('Error:', error);
+                }});
+            }}
+            
+            // Keep focus on input
+            messageInput.focus();
+        }});
+    </script>
+</body>
+</html>'''
+    return html
+
+@app.route('/rchat/send', methods=['POST'])
+def rchat_send():
+    """Handle message sending via AJAX without page reload."""
+    data = request.get_json()
+    
+    client_id = data.get('h', '')
+    token = data.get('x', '')
+    message = data.get('m', '')
+    
+    # Validate token
+    if client_id and client_id in client_tokens:
+        if client_tokens[client_id] != token:
+            return "Invalid session", 403
+    else:
+        return "Invalid session", 403
+    
+    # Process message
+    if message and len(message) <= MAX_MESSAGE_LENGTH:
+        with chat_locks.get(client_id, threading.Lock()):
+            # Check if partner left before processing message
+            check_partner_left(client_id)
+            
+            # Add message to chat
+            add_message(client_id, message)
+            
+            # Update last active time
+            if client_id in active_chats:
+                active_chats[client_id]['last_active'] = time.time()
+            
+            # Queue update for sender's own view
+            if client_id in active_connections and 'queue' in active_connections[client_id]:
+                time_str = get_utc_time()
+                escaped_message = escape(message)
+                update_html = f'''
+            <script>
+                var section = document.querySelector("section");
+                var newMsg = document.createElement("p");
+                newMsg.innerHTML = "<u>{time_str} - </u><s>You:</s> {escaped_message}";
+                section.appendChild(newMsg);
+                // Scroll to bottom
+                var d = document.querySelector("div");
+                d.scrollTo(0, d.scrollHeight);
+            </script>
+'''
+                active_connections[client_id]['queue'].put(update_html)
+    
+    return '', 204  # No content response
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -501,17 +690,27 @@ def contact():
 
 @app.route('/rchat')
 def rchat():
+    # Get the 'x' parameter
+    x_param = request.args.get('x', '')
+    
+    # Check if 'x' parameter exists and is a valid new session token
+    if x_param and x_param not in client_tokens.values():
+        # Clear any existing session and return simple input form
+        return render_input_form(x_param)
+    
+    # Otherwise, proceed with chat functionality
     # Get parameters
     client_id = request.args.get('h', '')
     message = request.args.get('m', '')
     start_time = request.args.get('t', '')
+    token = x_param  # Use x parameter as token
     
     # Initialize or update chat session
-    client_id, start_time, has_partner = initialize_chat_session(client_id, message, start_time)
+    client_id, start_time, has_partner, token = initialize_chat_session(client_id, message, start_time, token)
     
-    # Create response that streams updates in chunks with progressive loading
+    # Create response that streams updates
     return Response(
-        stream_chat_content(client_id, start_time),
+        stream_chat_content(client_id, start_time, token),
         mimetype='text/html',
         headers={
             # Disable caching to ensure fresh content
@@ -534,11 +733,17 @@ def cleanup_inactive_chats():
                 add_system_message(partner_id, "The random left.")
                 active_chats.pop(partner_id, None)
             active_chats.pop(client_id, None)
+            client_tokens.pop(client_id, None)
     
     # Also clean up old connections
     for client_id in list(active_connections.keys()):
         if now - active_connections[client_id].get('timestamp', 0) > 1800:  # 30 minutes
             active_connections.pop(client_id, None)
+    
+    # Clean up orphaned tokens
+    for client_id in list(client_tokens.keys()):
+        if client_id not in active_chats and client_id not in pending_users:
+            client_tokens.pop(client_id, None)
 
 # Run cleanup function periodically
 def run_cleanup():
